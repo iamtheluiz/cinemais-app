@@ -3,9 +3,31 @@ import { FlatList, StyleSheet, Text, View, Image, TouchableOpacity, ScrollView }
 import api from '../services/api';
 import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons'
 
 function Movie({ route }) {
   const { movie } = route.params;
+  const [sessions, setSessions] = useState([]);
+
+  useEffect(() => {
+    async function loadSessions() {
+      const response = await api.get(`/movie/${movie.id}/session`);
+
+      setSessions(response.data.data.map(session => {
+        const startHour = new Date(session.startDate).getHours().toString().padStart(2, '0');
+        const startMinutes = new Date(session.startDate).getMinutes().toString().padStart(2, '0');
+        const endHour = new Date(session.endDate).getHours().toString().padStart(2, '0');
+        const endMinutes = new Date(session.endDate).getMinutes().toString().padStart(2, '0');
+
+        return {
+          ...session,
+          sessionDate: new Date(session.startDate).getDate() === new Date().getDate() ? 'Hoje' : new Date(session.startDate).getDate() === new Date().getDate() + 1 ? 'Amanhã' : new Date(session.startDate).toLocaleDateString(),
+          sessionTime: `${startHour}:${startMinutes} - ${endHour}:${endMinutes}`
+        }
+      }));
+    }
+    loadSessions();
+  }, []);
 
   const navigation = useNavigation();
 
@@ -16,9 +38,13 @@ function Movie({ route }) {
   function handleGenre(genre) {
     navigation.navigate('Genre', { genre })
   }
-  
+
   function handleCast(cast) {
     navigation.navigate('Cast', { cast })
+  }
+
+  function handleCine(cine) {
+
   }
 
   return (
@@ -49,9 +75,22 @@ function Movie({ route }) {
               </TouchableOpacity>
             ))}
           </ScrollView>
-          
-          {/* <Text style={[styles.movieTitle, { marginTop: 16 }]}>Nos cinemas</Text> */}
 
+          <Text style={[styles.movieTitle, { marginTop: 16 }]}>Nos cinemas</Text>
+          <View style={styles.sessionList}>
+            {sessions.map((session, index) => (
+              <TouchableOpacity key={index} style={styles.sessionItem} onPress={() => handleCine(session.cine)}>
+                <Image source={{ uri: session.cine.logo }} style={styles.castItemImage} />
+                <View style={styles.sessionDetails}>
+                  <Text style={styles.sessionDetailText}>{session.cine.name}</Text>
+                  <Text style={styles.sessionDetailText}>Sala: {session.room}</Text>
+                  <Text style={styles.sessionDetailText}><Feather name="calendar" size={18} color="black" /> {session.sessionDate}</Text>
+                  <Text style={styles.sessionDetailText}><Feather name="clock" size={18} color="black" /> {session.sessionTime}</Text>
+                  <Text style={styles.sessionDetailText}><Feather name="map-pin" size={18} color="black" /> {session.cine.city.name}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -161,4 +200,26 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 12,
   },
+
+  sessionList: {
+    gap: 6,
+  },
+  sessionItem: {
+    maxWidth: '100%',
+    flexDirection: 'row',
+    gap: 6
+  },
+  sessionDetails: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-start'
+  },
+  sessionDetailText: {
+    color: '#000',
+    fontSize: 16,
+    lineHeight: 20,
+    textAlign: 'left',
+    fontFamily: 'Roboto-Medium'
+  }
 });
