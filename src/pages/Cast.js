@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
 import api from '../services/api';
 import { useNavigation } from '@react-navigation/native';
 import { convertMinutesToHours } from '../utils/convertMinutesToHours';

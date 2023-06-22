@@ -1,96 +1,89 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Image, ScrollView, TouchableOpacity } from 'react-native';
 import api from '../services/api';
-import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import MapView, { Marker } from 'react-native-maps';
+import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { convertMinutesToHours } from '../utils/convertMinutesToHours';
 
-import * as Location from 'expo-location';
-
-function Movie({ route }) {
-  const { movie } = route.params;
-  const [location, setLocation] = useState(null);
-  const [sessions, setSessions] = useState([]);
-
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        return;
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
-    })();
-  }, []);
+function Cine({ route }) {
+  const { cine } = route.params;
+  const [movies, setMovies] = useState([]);
 
   useEffect(() => {
-    async function loadSessions() {
-      const response = await api.get(`/movie/${movie.id}/session`, {
-        params: {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude
-        }
-      });
+    async function getMovies() {
+      const response = await api.get(`/cine/${cine.id}/open`)
 
-      setSessions(response.data.data.map(session => {
-        const startHour = new Date(session.startDate).getHours().toString().padStart(2, '0');
-        const startMinutes = new Date(session.startDate).getMinutes().toString().padStart(2, '0');
-        const endHour = new Date(session.endDate).getHours().toString().padStart(2, '0');
-        const endMinutes = new Date(session.endDate).getMinutes().toString().padStart(2, '0');
-
-        return {
-          ...session,
-          sessionDate: new Date(session.startDate).getDate() === new Date().getDate() ? 'Hoje' : new Date(session.startDate).getDate() === new Date().getDate() + 1 ? 'Amanhã' : new Date(session.startDate).toLocaleDateString(),
-          sessionTime: `${startHour}:${startMinutes} - ${endHour}:${endMinutes}`
-        }
-      }));
+      setMovies(response.data.data.map(item => item.movie).filter((item, index, array) => {
+        return array.map(mapItem => mapItem.id).indexOf(item.id) === index;
+      }))
     }
-    if (location) {
-      loadSessions();
-    }
-  }, [location]);
+    getMovies();
+  }, [])
 
   const navigation = useNavigation();
-
-  const handleWatchTrailer = async () => {
-    await WebBrowser.openBrowserAsync(movie.trailer);
-  };
-
-  function handleGenre(genre) {
-    navigation.navigate('Genre', { genre })
-  }
-
-  function handleCast(cast) {
-    navigation.navigate('Cast', { cast })
-  }
-
-  function handleCine(cine) {
-    navigation.navigate('Cine', { cine })
-  }
 
   return (
     <View style={styles.container}>
       <ScrollView>
         <View style={styles.section}>
-          <Text style={styles.movieTitle}>{movie.name}</Text>
-          <Image source={{ uri: movie.cover }} style={styles.movieItemCover} />
-          <ScrollView style={{ marginTop: 8 }} horizontal={true}>
-            {movie.genres.map((genre, index) => (
+
+          <View style={styles.sessionItem}>
+            <Image source={{ uri: cine.logo }} style={[styles.movieItemCover, { width: 100, height: 100 }]} />
+            <View style={styles.sessionDetails}>
+              <Text style={[styles.sessionDetailText, { fontSize: 24, lineHeight: 24}]}>{cine.name}</Text>
+              <Text style={styles.sessionDetailText}><FontAwesome5 name="map-marked-alt" size={18} color="black" /> {cine.city.name}</Text>
+              <Text style={styles.sessionDetailText}><Feather name="map-pin" size={18} color="black" /> {parseFloat(cine.distance).toFixed(2)} km</Text>
+            </View>
+          </View>
+          <Text style={[styles.movieTitle, { marginTop: 12 }]}>Localização:</Text>
+          <View style={styles.mapContainer}>
+            <MapView
+              style={styles.map}
+              initialRegion={{
+                latitude: parseFloat(cine.latitude),
+                longitude: parseFloat(cine.longitude),
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
+            >
+              <Marker
+                coordinate={{ latitude: parseFloat(cine.latitude), longitude: parseFloat(cine.longitude) }}
+                title={cine.name}
+              />
+            </MapView>
+          </View>
+          <Text style={[styles.movieTitle, { marginTop: 12 }]}>Em cartaz:</Text>
+          {movies.length === 0 && <Text style={styles.movieItemName}>Nenhum filme encontrado</Text>}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1, justifyContent: 'space-between' }}>
+            {movies !== null && movies.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.movieItem}
+                onPress={() => navigation.navigate('Movie', { movie: item })}
+              >
+                <Image source={{ uri: item.cover }} style={styles.movieItemCover} />
+                <Text style={styles.movieItemName}>{item.name}</Text>
+                <Text style={styles.movieItemDuration}>{convertMinutesToHours(item.duration)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {/* <ScrollView style={{ marginTop: 8 }} horizontal={true}>
+            {cine.genres.map((genre, index) => (
               <TouchableOpacity key={index} style={styles.genreItem} onPress={() => handleGenre(genre.name)}>
                 <Text style={styles.genreItemText}>{genre.name}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <Text style={[styles.buttonText, { color: '#aaa', textAlign: 'left', marginTop: 6 }]}>{movie.duration} minutos</Text>
-          <Text style={[styles.genreItemText, { textAlign: 'left' }]}>{movie.synopsis}</Text>
+          <Text style={[styles.buttonText, { color: '#aaa', textAlign: 'left', marginTop: 6 }]}>{cine.duration} minutos</Text>
+          <Text style={[styles.genreItemText, { textAlign: 'left' }]}>{cine.synopsis}</Text>
           <TouchableOpacity style={styles.button} onPress={handleWatchTrailer}>
             <Text style={styles.buttonText}>Ver Trailer</Text>
           </TouchableOpacity>
 
           <Text style={[styles.movieTitle, { marginTop: 16 }]}>Elenco</Text>
           <ScrollView horizontal={true}>
-            {movie.cast.map((cast, index) => (
+            {cine.cast.map((cast, index) => (
               <TouchableOpacity key={index} style={styles.castItem} onPress={() => handleCast(cast)}>
                 <Image source={{ uri: cast.picture }} style={styles.castItemImage} />
                 <Text style={styles.castItemName}>{cast.name}</Text>
@@ -112,14 +105,14 @@ function Movie({ route }) {
                 </View>
               </TouchableOpacity>
             ))}
-          </View>
+          </View> */}
         </View>
       </ScrollView>
     </View>
   );
 }
 
-export default Movie;
+export default Cine;
 
 const styles = StyleSheet.create({
   container: {
@@ -131,6 +124,37 @@ const styles = StyleSheet.create({
   trailer: {
     height: 300,
     width: 533.33
+  },
+
+  mapContainer: {
+    width: '100%',
+    height: 240,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 6,
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  sessionItem: {
+    maxWidth: '100%',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  sessionDetails: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-start'
+  },
+  sessionDetailText: {
+    color: '#000',
+    fontSize: 16,
+    lineHeight: 20,
+    textAlign: 'left',
+    fontFamily: 'Roboto-Medium'
   },
 
   button: {
@@ -158,12 +182,11 @@ const styles = StyleSheet.create({
     display: 'flex',
   },
   movieItem: {
-    maxWidth: 200 + 2 * 6,
-    marginRight: 12,
+    maxWidth: 164 + 2 * 6,
   },
   movieItemCover: {
-    width: 200,
-    height: 300,
+    width: 164,
+    height: 270,
     borderRadius: 12,
   },
   movieItemName: {

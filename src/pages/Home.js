@@ -75,6 +75,10 @@ function Home() {
     navigation.navigate('Genre', { genre })
   }
 
+  function handleCine(cine) {
+    navigation.navigate('Cine', { cine })
+  }
+
   function renderMovieItem({ item, index }) {
     return (
       <TouchableOpacity
@@ -110,7 +114,7 @@ function Home() {
           )}
           <View style={styles.sessionList}>
             {cines.map((cine, index) => (
-              <TouchableOpacity key={index} style={styles.sessionItem}>
+              <TouchableOpacity key={index} style={styles.sessionItem} onPress={() => handleCine(cine)}>
                 <Image source={{ uri: cine.logo }} style={styles.castItemImage} />
                 <View style={styles.sessionDetails}>
                   <Text style={styles.sessionDetailText}>{cine.name}</Text>

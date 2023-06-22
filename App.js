@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
@@ -15,6 +15,7 @@ import Landing from './src/pages/Landing';
 import Movie from './src/pages/Movie';
 import Genre from './src/pages/Genre';
 import Cast from './src/pages/Cast';
+import Cine from './src/pages/Cine';
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +47,7 @@ export default function App() {
           <Stack.Screen name="Movie" component={Movie} />
           <Stack.Screen name="Genre" component={Genre} />
           <Stack.Screen name="Cast" component={Cast} />
+          <Stack.Screen name="Cine" component={Cine} />
         </Stack.Navigator>
       </NavigationContainer>
     </>
