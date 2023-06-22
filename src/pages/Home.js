@@ -9,7 +9,6 @@ import * as Location from 'expo-location';
 
 function Home() {
   const [location, setLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
   const [movies, setMovies] = useState([])
   const [genres, setGenres] = useState([])
   const [cines, setCines] = useState([])
@@ -26,7 +25,6 @@ function Home() {
 
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
         return;
       }
 

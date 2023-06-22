@@ -3,15 +3,35 @@ import { FlatList, StyleSheet, Text, View, Image, TouchableOpacity, ScrollView }
 import api from '../services/api';
 import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons'
+import { Feather } from '@expo/vector-icons';
+
+import * as Location from 'expo-location';
 
 function Movie({ route }) {
   const { movie } = route.params;
+  const [location, setLocation] = useState(null);
   const [sessions, setSessions] = useState([]);
 
   useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(location);
+    })();
+  }, []);
+
+  useEffect(() => {
     async function loadSessions() {
-      const response = await api.get(`/movie/${movie.id}/session`);
+      const response = await api.get(`/movie/${movie.id}/session`, {
+        params: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude
+        }
+      });
 
       setSessions(response.data.data.map(session => {
         const startHour = new Date(session.startDate).getHours().toString().padStart(2, '0');
@@ -26,8 +46,10 @@ function Movie({ route }) {
         }
       }));
     }
-    loadSessions();
-  }, []);
+    if (location) {
+      loadSessions();
+    }
+  }, [location]);
 
   const navigation = useNavigation();
 
@@ -86,7 +108,7 @@ function Movie({ route }) {
                   <Text style={styles.sessionDetailText}>Sala: {session.room}</Text>
                   <Text style={styles.sessionDetailText}><Feather name="calendar" size={18} color="black" /> {session.sessionDate}</Text>
                   <Text style={styles.sessionDetailText}><Feather name="clock" size={18} color="black" /> {session.sessionTime}</Text>
-                  <Text style={styles.sessionDetailText}><Feather name="map-pin" size={18} color="black" /> {session.cine.city.name}</Text>
+                  <Text style={styles.sessionDetailText}><Feather name="map-pin" size={18} color="black" /> {session.cine.city.name} ({parseFloat(session.cine.distance).toFixed(2)} km)</Text>
                 </View>
               </TouchableOpacity>
             ))}

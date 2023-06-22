@@ -40,6 +40,7 @@ function Genre({ route }) {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1, justifyContent: 'space-between' }}>
             {movies !== null && movies.map((item, index) => (
               <TouchableOpacity
+                key={index}
                 style={styles.movieItem}
                 onPress={() => navigation.navigate('Movie', { movie: item })}
               >
